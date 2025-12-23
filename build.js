@@ -22,18 +22,31 @@ function build() {
 
     // Load Config
     let config = { domain: '' };
-    if (fs.existsSync(CONFIG_FILE)) {
+    
+    // Priority 1: Environment Variable
+    if (process.env.DOMAIN) {
+        config.domain = process.env.DOMAIN;
+        console.log('Loaded domain from environment variable.');
+    } 
+    // Priority 2: Config File
+    else if (fs.existsSync(CONFIG_FILE)) {
         try {
             const configContent = fs.readFileSync(CONFIG_FILE, 'utf8');
             const parsed = JSON.parse(configContent);
             if (parsed.domain) {
-                // Remove trailing slash if present
-                config.domain = parsed.domain.replace(/\/$/, '');
+                config.domain = parsed.domain;
             }
+            console.log('Loaded domain from config.json.');
         } catch (e) {
             console.warn('Failed to parse config.json, using default settings.');
         }
     }
+
+    // Normalize domain (remove trailing slash)
+    if (config.domain) {
+        config.domain = config.domain.replace(/\/$/, '');
+    }
+
     console.log(`Using domain prefix: "${config.domain}"`);
 
     // 1. Clean/Create Dist
