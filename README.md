@@ -1,9 +1,9 @@
-# 静态随机图 API 使用手册 (Static Random Pic API Manual)
+# 静态随机图 API (Static Random Pic API)
 
 这是一个纯静态的随机图 API 解决方案。它不依赖任何后端逻辑（如 Cloudflare Workers 或 Python 服务器），完全依靠构建时生成的静态资源和客户端 JavaScript 实现随机图功能。
 
 ## 1. 原理
-构建脚本 (`build.js`) 会扫描 `ri/h` (横屏) 和 `ri/v` (竖屏) 目录下的图片，将它们随机重命名为数字序列 (1.webp, 2.webp...) 并输出到 `dist` 目录。同时生成对应的 JavaScript 文件，包含图片总数和随机逻辑。客户端加载 JS 后，会自动在**全局范围**内寻找并替换特殊的占位符链接。
+构建脚本 (`build.js`) 会扫描 `ri/h` (横屏) 和 `ri/v` (竖屏) 目录下的图片，将它们随机重命名为数字序列 (1.webp, 2.webp...) 并输出到 `dist` 目录。同时生成**一个** JavaScript 文件 (`random.js`)，包含图片总数和随机逻辑。客户端加载 JS 后，会自动查找带有特殊属性的标签并插入图片链接。
 
 ## 2. 构建 (Build)
 在本地运行构建脚本以生成 `dist` 目录：
@@ -43,83 +43,58 @@ node build.js
 在你的 HTML 页面中引入生成的 JS 文件即可。
 
 ### 引入脚本
+只需引入一个文件：
 ```html
-<!-- 引入横屏随机图脚本 -->
-<script src="https://your-domain.com/random-h.js"></script>
-<!-- 引入竖屏随机图脚本 -->
-<script src="https://your-domain.com/random-v.js"></script>
+<script src="https://your-domain.com/random.js"></script>
 ```
 
-### 自动全局替换功能
-脚本加载后会自动在 **DOM 中的所有属性和文本** 中查找占位符，并将其替换为随机图片 URL。
+### 特性说明
+*   **会话保持 (Session Persistence)**: 在同一会话期间，横屏和竖屏图片会保持不变（不会每次刷新都变，除非重新打开页面或新开会话）。
+*   **Swup 支持**: 内置对 Swup 页面切换的完美支持 (`content:replace` hook)。
+*   **预加载**: 背景图会自动预加载，防止闪烁。
 
-**支持的占位符格式 (不区分协议)：**
-*   `random:h`
-*   `http://random:h`
-*   `https://random:h`
-*   (竖屏同理：`random:v`, `http://random:v`, `https://random:v`)
+### 使用方法
 
-脚本会自动识别这些字符串，并将其统一替换为最终的图片链接。
+#### 1. 背景图片 (Background Image) - 定制版
+这是根据需求定制的逻辑，针对 ID 为 `bg-box` 的元素进行特殊处理。
+**逻辑**：JS 会自动寻找 `id="bg-box"` 的元素，预加载一张横屏随机图，成功后设置背景，并添加 `loaded` 类名，同时设置 CSS 变量。
 
-#### 1. 常见用法 (img src, a href)
 ```html
-<!-- 图片 -->
-<img src="https://random:h" alt="Random Image">
-
-<!-- 链接 (使用 http 也可以) -->
-<a href="http://random:v" target="_blank">点击查看随机竖屏图</a>
-```
-
-#### 2. 样式属性 (style)
-**普通用法：**
-```html
-<div style="background-image: url('random:h');">
-    背景图区域
+<div id="bg-box" class="transition-opacity duration-500 opacity-0 loaded:opacity-100">
+    <!-- 内容 -->
 </div>
 ```
 
-**高级用法 (推荐 - 避免 404 错误)：**
-如果直接在 `style` 中使用 `url(random:h)`，浏览器可能会在 JS 运行前尝试加载该 URL 导致报错或放弃加载。
-**解决方案：** 使用 `data-style` 属性。脚本会自动处理它并将其合并到 `style` 属性中。
+**效果：**
+*   **预加载 (Preloading)**: 只有当图片完全下载后，才会设置背景图。
+*   **Loaded Class**: 图片加载完成后，元素会被添加 `.loaded` 类名。
+*   **CSS 变量**: 加载完成后会自动更新 `--card-bg` 和 `--float-panel-bg` 变量。
 
+#### 2. 通用背景图片 (Generic Background) - 备用
+如果没有找到 `#bg-box`，脚本会回退到查找带有 `data-random-bg` 属性的元素。
 ```html
-<!-- 浏览器一开始不会解析 data-style 中的 CSS，因此不会报错 -->
-<div data-style="--bg-url: url(random:h); background-image: var(--bg-url);">
-    背景图区域 (Lazy Applied Style)
-</div>
-```
-脚本运行后，它会自动变为：
-```html
-<div style="--bg-url: url(https://.../1.webp); background-image: var(--bg-url);">
-    背景图区域 (Lazy Applied Style)
-</div>
+<div data-random-bg="h">横屏背景</div>
+<div data-random-bg="v">竖屏背景</div>
 ```
 
-#### 3. 任意属性 (Global Attribute Replacement)
-任何属性中的占位符都会被替换。
+#### 3. 普通图片 (img 标签)
+使用 `alt` 属性来指定随机图类型。
 ```html
-<!-- data 属性 -->
-<div data-bg-url="https://random:h"></div>
+<!-- 横屏随机图 -->
+<img alt="random:h" title="我的随机图片">
 
-<!-- meta 标签 -->
-<meta property="og:image" content="http://random:h">
-```
-
-#### 4. 文本内容 (Text Content)
-甚至页面上直接显示的文本也会被替换（只要包含该占位符）。
-```html
-<p>当前的随机图链接是：random:v</p>
-<!-- 页面渲染后会变成：当前的随机图链接是：https://your-domain.com/ri/v/123.webp -->
+<!-- 竖屏随机图 -->
+<img alt="random:v" style="width: 200px;">
 ```
 
 ### 手动调用 (高级)
-JS 会暴露全局函数，你可以手动获取随机 URL：
+JS 暴露了全局函数，你可以手动获取随机 URL：
 ```javascript
-// 获取横屏随机图 URL
+// 获取横屏随机图 URL (会话内保持一致)
 var urlH = window.getRandomPicH(); 
 console.log(urlH);
 
-// 获取竖屏随机图 URL
+// 获取竖屏随机图 URL (会话内保持一致)
 var urlV = window.getRandomPicV();
 console.log(urlV);
 ```
@@ -130,8 +105,7 @@ console.log(urlV);
     *   `ri/v/` - 放入竖屏图片
 *   `dist/` - 构建产物 (部署这个文件夹)
     *   `ri/` - 处理后的图片
-    *   `random-h.js` - 横屏逻辑
-    *   `random-v.js` - 竖屏逻辑
+    *   `random.js` - **核心逻辑文件**
     *   `index.html` - 演示页面
 *   `build.js` - 构建脚本
 *   `config.json` - 配置文件
