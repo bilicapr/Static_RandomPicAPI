@@ -111,10 +111,10 @@ function build() {
     window['getRandomPic' + type.toUpperCase()] = getRandomUrl;
 
     // Auto-replace logic
-    // Finds elements with src="random:{type}" or href="random:{type}" and updates them
+    // Finds elements with src="https://random:{type}" or href="https://random:{type}" and updates them
     document.addEventListener('DOMContentLoaded', function() {
         var url = getRandomUrl();
-        var placeholder = 'random:' + type;
+        var placeholder = 'https://random:' + type;
         
         // Update elements with special href
         var linkElements = document.querySelectorAll('[href="' + placeholder + '"]');
@@ -173,22 +173,22 @@ function createDemoHtml() {
 
     <div class="card">
         <h2>Horizontal Image (横屏)</h2>
-        <!-- The JS will find src="random:h" and update src -->
-        <img src="random:h" alt="Loading random horizontal image..." />
+        <!-- The JS will find src="https://random:h" and update src -->
+        <img src="https://random:h" alt="Loading random horizontal image..." />
         <br><br>
         <p>Link example (HTML Form/Link replacement):</p>
-        <!-- The JS will find href="random:h" and update href -->
-        <a href="random:h" class="btn" target="_blank">Open Random Horizontal Image</a>
+        <!-- The JS will find href="https://random:h" and update href -->
+        <a href="https://random:h" class="btn" target="_blank">Open Random Horizontal Image</a>
     </div>
 
     <div class="card">
         <h2>Vertical Image (竖屏)</h2>
-        <!-- The JS will find src="random:v" and update src -->
-        <img src="random:v" alt="Loading random vertical image..." style="max-height: 400px;" />
+        <!-- The JS will find src="https://random:v" and update src -->
+        <img src="https://random:v" alt="Loading random vertical image..." style="max-height: 400px;" />
         <br><br>
         <p>Link example:</p>
-        <!-- The JS will find href="random:v" and update href -->
-        <a href="random:v" class="btn" target="_blank">Open Random Vertical Image</a>
+        <!-- The JS will find href="https://random:v" and update href -->
+        <a href="https://random:v" class="btn" target="_blank">Open Random Vertical Image</a>
     </div>
 
     <!-- Import the generated scripts -->
