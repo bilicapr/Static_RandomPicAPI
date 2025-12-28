@@ -1,0 +1,27 @@
+import { getAssetFromKV } from '@cloudflare/kv-asset-handler';
+import manifestJSON from '__STATIC_CONTENT_MANIFEST';
+
+const assetManifest = JSON.parse(manifestJSON);
+
+export default {
+  async fetch(request, env, ctx) {
+    try {
+      // Add logic to serve static assets
+      return await getAssetFromKV(
+        {
+          request,
+          waitUntil: ctx.waitUntil.bind(ctx),
+        },
+        {
+          ASSET_NAMESPACE: env.__STATIC_CONTENT,
+          ASSET_MANIFEST: assetManifest,
+        }
+      );
+    } catch (e) {
+      if (e.message.includes('404')) {
+        return new Response('Not Found', { status: 404 });
+      }
+      return new Response('Internal Error', { status: 500 });
+    }
+  },
+};

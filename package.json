@@ -1,0 +1,16 @@
+{
+  "name": "static-random-pic-api",
+  "version": "1.0.0",
+  "description": "Static Random Pic API hosted on Cloudflare Workers",
+  "main": "index.js",
+  "scripts": {
+    "build": "node build.js",
+    "deploy": "wrangler deploy"
+  },
+  "dependencies": {
+    "@cloudflare/kv-asset-handler": "^0.3.4"
+  },
+  "devDependencies": {
+    "wrangler": "^3.111.0"
+  }
+}

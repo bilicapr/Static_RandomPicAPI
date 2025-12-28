@@ -98,7 +98,32 @@ function build() {
  */
 (function() {
     var counts = ${JSON.stringify(counts)};
-    var domain = '${config.domain}';
+    
+    // Auto-detect domain based on where the script is loaded from
+    var scriptUrl = document.currentScript ? document.currentScript.src : '';
+    var domain = '';
+    
+    if (scriptUrl) {
+        // If loaded via script tag, get the origin + path up to /random.js
+        try {
+            var urlObj = new URL(scriptUrl);
+            // Assuming random.js is at root or we just want the origin if it's cleaner
+            // But user structure is /random.js, so origin is safe if we want absolute paths
+            // Or we can just use the origin if we assume images are at /ri/...
+            domain = urlObj.origin; 
+        } catch(e) {
+            domain = '';
+        }
+    }
+    
+    // Fallback or override if needed, but for "any domain" support, using origin is best.
+    // If running locally or unable to detect, might need a fallback or relative path.
+    if (!domain) {
+         // Fallback to relative path if we can't determine domain
+         domain = ''; 
+    }
+    
+    console.log('Static Random Pic API: Detected domain:', domain);
     
     // State management for session consistency
     var sessionRandomH = null;
@@ -228,70 +253,8 @@ function build() {
 })();
 `;
     fs.writeFileSync(path.join(DIST, 'random.js'), jsContent.trim());
-
-    // Copy index.html if exists and not empty
-    const indexSrc = path.join(ROOT, 'index.html');
-    if (fs.existsSync(indexSrc)) {
-         const stats = fs.statSync(indexSrc);
-         if (stats.size > 0) {
-             fs.copyFileSync(indexSrc, path.join(DIST, 'index.html'));
-             console.log('Copied index.html to dist');
-         } else {
-             console.log('index.html is empty, creating a demo page in dist...');
-             createDemoHtml();
-         }
-    } else {
-        createDemoHtml();
-    }
     
     console.log('Build complete. Output is in /dist folder.');
-}
-
-function createDemoHtml() {
-    const htmlContent = `<!DOCTYPE html>
-<html lang="zh-CN">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Static Random Pic API Demo</title>
-    <style>
-        body { font-family: sans-serif; max-width: 800px; margin: 20px auto; padding: 20px; }
-        .card { border: 1px solid #ccc; padding: 20px; margin-bottom: 20px; border-radius: 8px; }
-        img { max-width: 100%; height: auto; border-radius: 4px; display: block; background: #eee; min-height: 200px; }
-        .btn { display: inline-block; padding: 10px 20px; background: #007bff; color: white; text-decoration: none; border-radius: 4px; }
-        .bg-box { width: 100%; height: 200px; background-size: cover; background-position: center; border-radius: 4px; border: 1px dashed #999; display: flex; align-items: center; justify-content: center; color: white; text-shadow: 0 1px 3px rgba(0,0,0,0.8); font-weight: bold; }
-    </style>
-</head>
-<body>
-    <h1>Static Random Pic API (Client-Side)</h1>
-    <p>This is a static implementation. Images are randomized at build time.</p>
-
-    <div class="card">
-        <h2>Horizontal Image (横屏)</h2>
-        <p>Using <code>&lt;img alt="random:h"&gt;</code>:</p>
-        <!-- Logic: Script finds alt="random:h" and sets src -->
-        <img alt="random:h" title="Random Horizontal Image" />
-        <br>
-        
-        <p>Background Image (<code>data-random-bg="h"</code>):</p>
-        <!-- Logic: Script finds data-random-bg="h" and sets style.backgroundImage -->
-        <div class="bg-box" data-random-bg="h">
-            Background Image
-        </div>
-    </div>
-
-    <div class="card">
-        <h2>Vertical Image (竖屏)</h2>
-        <p>Using <code>&lt;img alt="random:v"&gt;</code>:</p>
-        <img alt="random:v" style="max-height: 400px;" title="Random Vertical Image" />
-    </div>
-
-    <!-- Import the single generated script -->
-    <script src="random.js"></script>
-</body>
-</html>`;
-    fs.writeFileSync(path.join(DIST, 'index.html'), htmlContent);
-    console.log('Created demo index.html in dist');
 }
 
 build();
